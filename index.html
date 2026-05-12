@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraceProof — Forensic Incident Capture</title>
+<meta name="description" content="Forensic-grade screen capture for trading desks, compliance teams, and enterprise investigations. Every incident is evidence.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0b0d;
+  --bg2:       #0e1014;
+  --surface:   #13151a;
+  --border:    #1e2028;
+  --border2:   #252830;
+  --text:      #d8dce8;
+  --muted:     #5a6070;
+  --faint:     #2a2d35;
+  --accent:    #3b82f6;
+  --accent-d:  #1d4ed8;
+  --accent-g:  rgba(59,130,246,0.08);
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --amber:     #f59e0b;
+  --mono:      'IBM Plex Mono', monospace;
+  --sans:      'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Noise texture overlay ────────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 999;
+  opacity: .5;
+}
+
+/* ── Grid lines ──────────────────────────────────────────────────────────── */
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: .35;
+  pointer-events: none;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  height: 60px;
+  background: rgba(10,11,13,.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--text);
+  text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  margin-left: auto;
+  align-items: center;
+  list-style: none;
+}
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: .02em;
+  transition: color .15s;
+}
+.nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  margin-left: 32px;
+  padding: 7px 18px;
+  background: var(--accent);
+  color: #fff !important;
+  border-radius: 5px;
+  font-size: 13px !important;
+  font-weight: 500;
+  transition: background .15s !important;
+}
+.nav-cta:hover { background: var(--accent-d) !important; color: #fff !important; }
+
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 120px 40px 80px;
+  overflow: hidden;
+}
+
+.hero-glow {
+  position: absolute;
+  top: -200px; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(59,130,246,.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+}
+.hero-label::before {
+  content: '';
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(59,130,246,.2); }
+  50%       { box-shadow: 0 0 0 6px rgba(59,130,246,.08); }
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: #eef0f5;
+  margin-bottom: 8px;
+}
+h1 .accent { color: var(--accent); }
+h1 .dim    { color: var(--muted); font-weight: 300; }
+
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 300;
+  color: var(--muted);
+  max-width: 560px;
+  margin: 24px 0 44px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background .15s, transform .1s;
+  border: none; cursor: pointer;
+}
+.btn-primary:hover { background: var(--accent-d); transform: translateY(-1px); }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  border: 1px solid var(--border2);
+  transition: border-color .15s, color .15s;
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.stat .num {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: #eef0f5;
+  display: block;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat .lbl {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+
+/* ── Demo placeholder ─────────────────────────────────────────────────────── */
+.demo-wrap {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto 100px;
+  padding: 0 40px;
+}
+
+.demo-frame {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.demo-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #0e1014;
+  border-bottom: 1px solid var(--border);
+}
+.demo-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.demo-dot:nth-child(1) { background: #ef4444; }
+.demo-dot:nth-child(2) { background: #f59e0b; }
+.demo-dot:nth-child(3) { background: #22c55e; }
+.demo-title {
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.demo-video-area {
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0b0d;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.demo-video-area video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.demo-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(10,11,13,.6);
+  backdrop-filter: blur(2px);
+  transition: opacity .2s;
+}
+.demo-play-overlay:hover { opacity: .85; }
+
+.play-btn {
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 12px rgba(59,130,246,.15);
+}
+.play-btn svg { margin-left: 4px; }
+
+.demo-play-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* Animated chain visualization (shown when no video) */
+.chain-viz {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  gap: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow: hidden;
+  opacity: .6;
+}
+.chain-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #13151a;
+  animation: fadeIn .4s both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.chain-row:nth-child(1) { animation-delay: .1s; }
+.chain-row:nth-child(2) { animation-delay: .25s; }
+.chain-row:nth-child(3) { animation-delay: .4s; }
+.chain-row:nth-child(4) { animation-delay: .55s; }
+.chain-row:nth-child(5) { animation-delay: .7s; }
+.chain-seq  { color: var(--muted); min-width: 32px; }
+.chain-id   { color: var(--accent); flex: 1; }
+.chain-hash { color: #2a5fa5; }
+.chain-ok   { color: var(--green); margin-left: auto; }
+.chain-ts   { color: var(--muted); }
+
+/* ── Section base ─────────────────────────────────────────────────────────── */
+section {
+  position: relative;
+  padding: 96px 40px;
+}
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--mono);
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 600;
+  color: #eef0f5;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -.02em;
+}
+.section-body {
+  font-size: 16px;
+  color: var(--muted);
+  max-width: 600px;
+  line-height: 1.75;
+}
+
+/* ── How it works ─────────────────────────────────────────────────────────── */
+#how { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  margin-top: 56px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.step {
+  background: var(--surface);
+  padding: 32px 28px;
+  position: relative;
+}
+
+.step-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .1em;
+  margin-bottom: 20px;
+}
+
+.step-icon {
+  width: 40px; height: 40px;
+  background: var(--accent-g);
+  border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.step h3 {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: #eef0f5;
+  margin-bottom: 10px;
+}
+.step p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* ── Features ─────────────────────────────────────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1px;
+  margin-top: 56px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.feat {
+  background: var(--surface);
+  padding: 28px;
+  transition: background .15s;
+}
+.feat:hover { background: #161820; }
+
+.feat-icon {
+  font-size: 22px;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.feat h3 {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef0f5;
+  margin-bottom: 8px;
+  letter-spacing: -.01em;
+}
+.feat p {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.feat-tag {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: .04em;
+}
+.tag-ent  { background: rgba(99,102,241,.15); color: #a5b4fc; }
+.tag-core { background: rgba(34,197,94,.12);  color: #86efac; }
+.tag-sec  { background: rgba(245,158,11,.12); color: #fcd34d; }
+
+/* ── Who it's for ─────────────────────────────────────────────────────────── */
+#who { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+.who-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.who-card {
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 28px;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.who-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.who-card h3 {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: #eef0f5;
+  margin-bottom: 12px;
+}
+.who-card p  { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 16px; }
+.who-card ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.who-card li {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.who-card li::before {
+  content: '→';
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Pricing ──────────────────────────────────────────────────────────────── */
+#pricing { background: var(--bg); }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 48px;
+  align-items: start;
+}
+
+.price-card {
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.price-card:hover { border-color: rgba(59,130,246,.3); }
+.price-card.featured {
+  border-color: rgba(59,130,246,.4);
+  background: #0f1420;
+}
+
+.price-head {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.price-tier {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.price-val {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.price-val .amount {
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: 600;
+  color: #eef0f5;
+  letter-spacing: -.02em;
+}
+.price-val .currency { font-family: var(--mono); font-size: 18px; color: var(--muted); }
+.price-val .period   { font-size: 13px; color: var(--muted); }
+
+.price-annual {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+
+.price-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+.price-body { padding: 24px 28px; }
+
+.price-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+.price-features li {
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.4;
+}
+.price-features li .chk { color: var(--green); flex-shrink: 0; font-family: var(--mono); }
+.price-features li .dim { color: var(--muted); }
+.price-features li.na   { opacity: .35; }
+.price-features li.na .chk { color: var(--muted); }
+
+.price-cta {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  text-align: center;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all .15s;
+  cursor: pointer;
+  border: none;
+}
+.price-cta-primary  { background: var(--accent); color: #fff; }
+.price-cta-primary:hover  { background: var(--accent-d); }
+.price-cta-ghost { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.price-cta-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Technical proof strip ───────────────────────────────────────────────── */
+#tech {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 64px 40px;
+}
+
+.tech-scroll {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+
+.tech-item {
+  flex-shrink: 0;
+  padding: 20px 28px;
+  border-right: 1px solid var(--border);
+  min-width: 200px;
+}
+.tech-item:last-child { border-right: none; }
+
+.tech-item .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.tech-item .val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ── CTA band ─────────────────────────────────────────────────────────────── */
+#cta {
+  background: var(--bg);
+  padding: 96px 40px;
+  text-align: center;
+}
+#cta .section-title { margin: 0 auto 16px; }
+#cta .section-body  { margin: 0 auto 40px; text-align: center; }
+#cta .hero-actions  { justify-content: center; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 40px;
+}
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.footer-logo {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.footer-logo span { color: var(--accent); }
+.footer-links { display: flex; gap: 24px; list-style: none; }
+.footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; }
+.footer-links a:hover { color: var(--text); }
+.footer-legal { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.divider {
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+  margin: 0;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  section, .hero, #tech { padding-left: 20px; padding-right: 20px; }
+  .demo-wrap { padding: 0 20px; }
+  .hero { padding-top: 100px; }
+  .hero-stats { gap: 24px; }
+  footer { padding: 32px 20px; }
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── Entrance animations ─────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">Trace<span>Proof</span></a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#features">Capabilities</a></li>
+    <li><a href="#who">Use cases</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="manifest.html">Manifesto</a></li>
+    <li><a href="#cta" class="nav-cta">Get started</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="grid-bg"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-label">Forensic incident capture</div>
+    <h1>
+      Every incident<br>
+      is <span class="accent">evidence.</span><br>
+      <span class="dim">Capture it that way.</span>
+    </h1>
+    <p class="hero-sub">
+      TraceProof maintains a continuous screen buffer and seals a cryptographically-signed clip the moment something happens — before anyone can alter it.
+    </p>
+    <div class="hero-actions">
+      <a href="#cta" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Request access
+      </a>
+      <a href="#how" class="btn-ghost">See how it works</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="num">HMAC‑SHA256</span>
+        <span class="lbl">Package signing</span>
+      </div>
+      <div class="stat">
+        <span class="num">3× NTP + DNS</span>
+        <span class="lbl">Timestamp verification</span>
+      </div>
+      <div class="stat">
+        <span class="num">Hash‑linked</span>
+        <span class="lbl">Chain of custody</span>
+      </div>
+      <div class="stat">
+        <span class="num">&lt;1ms</span>
+        <span class="lbl">Trigger latency</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Demo -->
+<div class="demo-wrap reveal">
+  <div class="demo-frame">
+    <div class="demo-bar">
+      <div class="demo-dot"></div>
+      <div class="demo-dot"></div>
+      <div class="demo-dot"></div>
+      <span class="demo-title">TraceProof — Evidence Vault Dashboard</span>
+    </div>
+    <div class="demo-video-area" id="demoArea">
+      <!-- Chain visualization (shown until video is added) -->
+      <div class="chain-viz" id="chainViz">
+        <div class="chain-row">
+          <span class="chain-seq">#041</span>
+          <span class="chain-id">3f8a2c1d-hotkey</span>
+          <span class="chain-ts">14:32:01.847</span>
+          <span class="chain-hash">bf59011d…</span>
+          <span class="chain-ok">✓ verified</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-seq">#042</span>
+          <span class="chain-id">a91f0e7b-ocr→"margin call"</span>
+          <span class="chain-ts">14:32:03.201</span>
+          <span class="chain-hash">9cef51f2…</span>
+          <span class="chain-ok">✓ verified</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-seq">#043</span>
+          <span class="chain-id">c4a64e58-rage-click</span>
+          <span class="chain-ts">14:33:17.009</span>
+          <span class="chain-hash">25db9cb4…</span>
+          <span class="chain-ok">✓ verified</span>
+        </div>
+        <div class="chain-row">
+          <span class="chain-seq">#044</span>
+          <span class="chain-id">60801e35-ocr→"connection lost"</span>
+          <span class="chain-ts">14:41:55.512</span>
+          <span class="chain-hash">a9994fc5…</span>
+          <span class="chain-ok">✓ verified</span>
+        </div>
+        <div class="chain-row" style="opacity:.4">
+          <span class="chain-seq">#045</span>
+          <span class="chain-id">awaiting next incident…</span>
+          <span class="chain-ts">—</span>
+          <span class="chain-hash">—</span>
+          <span class="chain-ok" style="color:var(--muted)">recording</span>
+        </div>
+      </div>
+      <!-- Uncomment and set src when demo video is ready:
+      <video id="demoVideo" src="demo.mp4" poster="demo-poster.jpg" preload="none"></video>
+      -->
+      <div class="demo-play-overlay" onclick="playDemo()">
+        <div class="play-btn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <span class="demo-play-label">Watch demo</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- How it works -->
+<section id="how">
+  <div class="section-inner">
+    <div class="section-label reveal">Process</div>
+    <h2 class="section-title reveal">From event to evidence<br>in under a second.</h2>
+    <div class="steps reveal">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon">⊙</div>
+        <h3>Continuous buffer</h3>
+        <p>DXGI Desktop Duplication captures a rolling pre-trigger buffer. No gaps, no missed frames — including DirectX overlays invisible to conventional tools.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon">⚡</div>
+        <h3>Instant trigger</h3>
+        <p>Hotkey, OCR pattern match, rage-click detection, or mic activity. The trigger is configurable. The response is immediate.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon">🔒</div>
+        <h3>Cryptographic seal</h3>
+        <p>Dual SHA-256 hash (capture stream + export), HMAC-SHA256 package signing under DPAPI or TPM, timestamps from 3 NTP servers and DNS SOA cross-check.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-icon">⛓</div>
+        <h3>Chain of custody</h3>
+        <p>Each incident is linked to the previous by hash — blockchain-style. Deletion or modification of any entry is immediately detectable during verification.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-icon">☁</div>
+        <h3>Vault upload</h3>
+        <p>The sealed package is automatically uploaded to your Evidence Vault before it can be tampered with locally. Server-side hash verification on receipt.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-label reveal">Capabilities</div>
+    <h2 class="section-title reveal">Built for investigation.<br>Not just recording.</h2>
+    <div class="features-grid reveal">
+
+      <div class="feat">
+        <span class="feat-icon">🎬</span>
+        <h3>DXGI Desktop Duplication</h3>
+        <p>Captures the DWM-composited frame including DirectX overlays, HDR content, and hardware-accelerated windows. GDI BitBlt cannot see any of this.</p>
+        <span class="feat-tag tag-core">Core</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">🔍</span>
+        <h3>Multi-monitor OCR triggers</h3>
+        <p>Windows.Media.Ocr (native, no Tesseract) scans per-monitor pattern sets. Fires on "margin call", "connection lost", "rejected" — whatever matters to your workflow.</p>
+        <span class="feat-tag tag-core">Core</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">⏱</span>
+        <h3>Multi-source timestamps</h3>
+        <p>System time, Windows FILETIME, 3 parallel NTP servers, and DNS SOA serial as an independent source. Skew detection is logged and included in every incident package.</p>
+        <span class="feat-tag tag-sec">Forensic</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">⛓</span>
+        <h3>Hash-linked chain of custody</h3>
+        <p>Every incident extends a hash-linked chain. The standalone verifier produces JSON output that integrates directly into SIEM pipelines and investigation workflows.</p>
+        <span class="feat-tag tag-sec">Forensic</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">🖥</span>
+        <h3>GPU-accelerated encoding</h3>
+        <p>NVENC (NVIDIA), AMF (AMD), and QSV (Intel) with CPU fallback. Full 1080p60 capture with near-zero performance impact on the monitored workstation.</p>
+        <span class="feat-tag tag-core">Core</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">🔑</span>
+        <h3>DPAPI + TPM key protection</h3>
+        <p>Signing keys are protected by Windows DPAPI (CurrentUser) or hardware TPM on Enterprise+. The key never leaves the machine in plaintext.</p>
+        <span class="feat-tag tag-sec">Forensic</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">🏢</span>
+        <h3>Full enterprise integration</h3>
+        <p>Group Policy (ADMX templates), registry policy, Windows Event Log integration for SIEM, MSI silent deployment. No UI required on managed endpoints.</p>
+        <span class="feat-tag tag-ent">Enterprise</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">🗄</span>
+        <h3>Evidence Vault + Dashboard</h3>
+        <p>Self-hosted Node.js vault with SQLite index, timeline view, chain integrity browser, ZIP export, and auto-generated PDF incident reports. Webhook on every new incident for Slack/Teams.</p>
+        <span class="feat-tag tag-ent">Enterprise</span>
+      </div>
+
+      <div class="feat">
+        <span class="feat-icon">✈</span>
+        <h3>Offline + air-gap licensing</h3>
+        <p>Machine-bound license activation without internet. Designed for air-gapped trading environments and high-security compliance deployments.</p>
+        <span class="feat-tag tag-ent">Enterprise</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Who it's for -->
+<section id="who">
+  <div class="section-inner">
+    <div class="section-label reveal">Use cases</div>
+    <h2 class="section-title reveal">Who uses TraceProof.</h2>
+    <div class="who-grid reveal">
+
+      <div class="who-card">
+        <h3>Trading desks &amp; brokers</h3>
+        <p>Capture execution errors, margin calls, and disputed orders with a forensic record that holds up to regulatory scrutiny.</p>
+        <ul>
+          <li>Automatic OCR trigger on "margin call", "rejected", "failed"</li>
+          <li>Millisecond-accurate timestamps cross-verified against NTP</li>
+          <li>Evidence package ready for compliance review in seconds</li>
+        </ul>
+      </div>
+
+      <div class="who-card">
+        <h3>Compliance &amp; internal investigations</h3>
+        <p>Replace "he said / she said" with cryptographically-signed, tamper-evident video records.</p>
+        <ul>
+          <li>Hash-linked chain detects any deletion or modification</li>
+          <li>PDF incident reports for HR and legal folders</li>
+          <li>Standalone verifier with JSON output for SIEM integration</li>
+        </ul>
+      </div>
+
+      <div class="who-card">
+        <h3>Fintech support &amp; outsourced compliance</h3>
+        <p>Multi-machine Evidence Vault with per-user incident filtering. Real-time webhook to Slack or Teams on every trigger.</p>
+        <ul>
+          <li>Evidence Vault dashboard across all monitored machines</li>
+          <li>Webhook integration for immediate incident notification</li>
+          <li>Retention policy and GDPR-compliant auto-purge</li>
+        </ul>
+      </div>
+
+      <div class="who-card">
+        <h3>Game anti-fraud &amp; privileged user monitoring</h3>
+        <p>Rage-click and hotkey triggers catch behavior that rule-based monitoring misses entirely.</p>
+        <ul>
+          <li>Rage-click and abnormal input pattern detection</li>
+          <li>OCR pattern sets per team or per role</li>
+          <li>Court-admissible audit trail with chain of custody</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Tech strip -->
+<section id="tech">
+  <div class="section-inner">
+    <div class="section-label" style="margin-bottom:24px">Technical specification</div>
+    <div class="tech-scroll">
+      <div class="tech-item"><div class="label">Capture API</div><div class="val">DXGI Desktop Duplication</div></div>
+      <div class="tech-item"><div class="label">Encoding</div><div class="val">NVENC / AMF / QSV / x264</div></div>
+      <div class="tech-item"><div class="label">OCR engine</div><div class="val">Windows.Media.Ocr</div></div>
+      <div class="tech-item"><div class="label">Signing</div><div class="val">HMAC-SHA256</div></div>
+      <div class="tech-item"><div class="label">Key storage</div><div class="val">DPAPI / TPM</div></div>
+      <div class="tech-item"><div class="label">Timestamp sources</div><div class="val">3× NTP + DNS SOA + FILETIME</div></div>
+      <div class="tech-item"><div class="label">Chain integrity</div><div class="val">SHA-256 hash-linked</div></div>
+      <div class="tech-item"><div class="label">Platform</div><div class="val">Windows 10 / 11</div></div>
+      <div class="tech-item"><div class="label">Deployment</div><div class="val">MSI + GPO + Registry</div></div>
+      <div class="tech-item"><div class="label">Vault</div><div class="val">Node.js + SQLite (self-hosted)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing">
+  <div class="section-inner">
+    <div class="section-label reveal">Pricing</div>
+    <h2 class="section-title reveal">Forensic-grade evidence.<br>Priced for real teams.</h2>
+    <p class="section-body reveal">Annual billing saves up to 30%. All plans include the standalone forensic verifier and lifetime access to updates within the tier.</p>
+
+    <div class="pricing-grid reveal">
+
+      <!-- PRO -->
+      <div class="price-card">
+        <div class="price-head">
+          <div class="price-tier">Pro</div>
+          <div class="price-val">
+            <span class="currency">$</span>
+            <span class="amount">89</span>
+            <span class="period">/ month</span>
+          </div>
+          <div class="price-annual">$749 / year — save $319</div>
+          <p class="price-desc">Single workstation. One investigator. Full forensic capability.</p>
+        </div>
+        <div class="price-body">
+          <ul class="price-features">
+            <li><span class="chk">✓</span> <span>Continuous DXGI capture, GPU encoding</span></li>
+            <li><span class="chk">✓</span> <span>Hotkey, OCR, rage-click triggers</span></li>
+            <li><span class="chk">✓</span> <span>Up to 15 OCR patterns</span></li>
+            <li><span class="chk">✓</span> <span>HMAC-SHA256 + DPAPI key protection</span></li>
+            <li><span class="chk">✓</span> <span>Multi-source timestamp verification</span></li>
+            <li><span class="chk">✓</span> <span>Hash-linked chain of custody</span></li>
+            <li><span class="chk">✓</span> <span>Standalone forensic verifier</span></li>
+            <li><span class="chk">✓</span> <span>Single monitor</span></li>
+            <li class="na"><span class="chk">—</span> <span class="dim">Evidence Vault / dashboard</span></li>
+            <li class="na"><span class="chk">—</span> <span class="dim">GPO / MSI deployment</span></li>
+          </ul>
+          <a href="#cta" class="price-cta price-cta-ghost">Get started</a>
+        </div>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="price-card featured">
+        <div class="price-head">
+          <div class="price-tier">Enterprise</div>
+          <div class="price-val">
+            <span class="currency">$</span>
+            <span class="amount">399</span>
+            <span class="period">/ month</span>
+          </div>
+          <div class="price-annual">$3 499 / year — save $1 289</div>
+          <p class="price-desc">On-premise deployment. GPO management. Up to 3–5 monitors per seat.</p>
+        </div>
+        <div class="price-body">
+          <ul class="price-features">
+            <li><span class="chk">✓</span> <span>Everything in Pro</span></li>
+            <li><span class="chk">✓</span> <span>Up to 100 OCR patterns</span></li>
+            <li><span class="chk">✓</span> <span>Up to 5 monitors per workstation</span></li>
+            <li><span class="chk">✓</span> <span>Evidence Vault + web dashboard</span></li>
+            <li><span class="chk">✓</span> <span>Multi-machine incident management</span></li>
+            <li><span class="chk">✓</span> <span>PDF incident reports + ZIP export</span></li>
+            <li><span class="chk">✓</span> <span>Webhook → Slack / Teams / custom</span></li>
+            <li><span class="chk">✓</span> <span>GPO (ADMX) + MSI silent deployment</span></li>
+            <li><span class="chk">✓</span> <span>Windows Event Log / SIEM integration</span></li>
+            <li><span class="chk">✓</span> <span>Air-gap / offline licensing</span></li>
+          </ul>
+          <a href="#cta" class="price-cta price-cta-primary">Contact sales</a>
+        </div>
+      </div>
+
+      <!-- Enterprise+ -->
+      <div class="price-card">
+        <div class="price-head">
+          <div class="price-tier">Enterprise+</div>
+          <div class="price-val">
+            <span class="currency">$</span>
+            <span class="amount">749</span>
+            <span class="period">/ month</span>
+          </div>
+          <div class="price-annual">$6 500 / year — save $2 488</div>
+          <p class="price-desc">Unlimited scale. Dedicated support. Custom deployment and SLA.</p>
+        </div>
+        <div class="price-body">
+          <ul class="price-features">
+            <li><span class="chk">✓</span> <span>Everything in Enterprise</span></li>
+            <li><span class="chk">✓</span> <span>Unlimited monitors per workstation</span></li>
+            <li><span class="chk">✓</span> <span>Unlimited OCR patterns</span></li>
+            <li><span class="chk">✓</span> <span>TPM hardware key binding</span></li>
+            <li><span class="chk">✓</span> <span>Priority support — 4h response SLA</span></li>
+            <li><span class="chk">✓</span> <span>Custom deployment &amp; onboarding</span></li>
+            <li><span class="chk">✓</span> <span>Dedicated Slack channel</span></li>
+            <li><span class="chk">✓</span> <span>Custom OCR pattern sets per role</span></li>
+            <li><span class="chk">✓</span> <span>99.5% uptime SLA for hosted vault</span></li>
+            <li><span class="chk">✓</span> <span>Volume licensing available</span></li>
+          </ul>
+          <a href="#cta" class="price-cta price-cta-ghost">Contact sales</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="section-inner">
+    <div class="section-label reveal" style="text-align:center">Get started</div>
+    <h2 class="section-title reveal" style="text-align:center;max-width:600px;margin:0 auto 16px">
+      Ready to turn incidents<br>into evidence?
+    </h2>
+    <p class="section-body reveal" style="text-align:center">
+      Request access or book a 30-minute technical demo. We'll walk through a live capture, chain verification, and Evidence Vault setup for your environment.
+    </p>
+    <div class="hero-actions reveal">
+      <a href="mailto:sales@traceproof.io" class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+        Request access
+      </a>
+      <a href="manifest.html" class="btn-ghost">Read the manifesto</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">Trace<span>Proof</span></div>
+    <ul class="footer-links">
+      <li><a href="manifest.html">Manifesto</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="terms.html">Terms &amp; EULA</a></li>
+      <li><a href="mailto:sales@traceproof.io">Contact</a></li>
+    </ul>
+    <div class="footer-legal">© 2026 TraceProof. For authorized monitoring only.</div>
+  </div>
+</footer>
+
+<script>
+// Reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Demo play (swap chain viz for video when video is available)
+function playDemo() {
+  const area = document.getElementById('demoArea');
+  const overlay = area.querySelector('.demo-play-overlay');
+  const viz = area.querySelector('.chain-viz');
+  const video = area.querySelector('video');
+  if (video) {
+    if (viz) viz.style.display = 'none';
+    overlay.style.display = 'none';
+    video.style.display = 'block';
+    video.play();
+  } else {
+    // No video yet — pulse the overlay briefly
+    overlay.style.opacity = '0.5';
+    setTimeout(() => overlay.style.opacity = '', 300);
+  }
+}
+
+// Chain viz — re-animate on scroll into view
+const chainViz = document.getElementById('chainViz');
+if (chainViz) {
+  const chainObs = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      chainViz.querySelectorAll('.chain-row').forEach(r => {
+        r.style.animation = 'none';
+        r.offsetHeight; // reflow
+        r.style.animation = '';
+      });
+    }
+  }, { threshold: 0.5 });
+  chainObs.observe(chainViz);
+}
+</script>
+</body>
+</html>
