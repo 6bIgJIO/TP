@@ -197,7 +197,7 @@ nav {
   display: flex;
   max-width: 1160px;
   margin: 0 auto;
-  padding: 0 40px 100px;
+  padding: 32px 40px 100px;
   gap: 40px;
   align-items: flex-start;
 }
@@ -252,6 +252,8 @@ nav {
 .legal-section {
   padding: 48px 0;
   border-bottom: 1px solid var(--border);
+  /* nav 60px + tab-bar 49px + 16px breathing room */
+  scroll-margin-top: 125px;
 }
 .legal-section:last-child { border-bottom: none; }
 
@@ -449,7 +451,7 @@ footer {
 .footer-legal { font-size: 11px; color: var(--muted); font-family: var(--mono); }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .toc { display: none; }
   .layout { padding-left: 20px; padding-right: 20px; }
 }
