@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The TraceProof Manifesto</title>
+<meta name="description" content="Forensic incident capture for the enterprise. Why ordinary screen recording is not evidence.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0a0b0d;
+  --bg2:     #0e1014;
+  --surface: #13151a;
+  --border:  #1e2028;
+  --text:    #d8dce8;
+  --muted:   #5a6070;
+  --accent:  #3b82f6;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999; opacity: .5;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; padding: 0 40px; height: 60px;
+  background: rgba(10,11,13,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--text); text-decoration: none; }
+.nav-logo span { color: var(--accent); }
+.nav-back { margin-left: auto; font-size: 12px; color: var(--muted); text-decoration: none; font-family: var(--mono); letter-spacing: .04em; transition: color .15s; }
+.nav-back:hover { color: var(--text); }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 120px 40px 96px;
+}
+
+.manifest-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.manifest-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+h1 {
+  font-family: var(--mono);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -.025em;
+  color: #eef0f5;
+  margin-bottom: 48px;
+}
+
+.manifest-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.section {
+  padding: 40px 0;
+  border-bottom: 1px solid var(--border);
+}
+.section:last-child { border-bottom: none; }
+
+.section-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: #eef0f5;
+  letter-spacing: -.01em;
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+
+p {
+  color: var(--muted);
+  font-size: 15.5px;
+  line-height: 1.8;
+  margin-bottom: 16px;
+  font-weight: 300;
+}
+p:last-child { margin-bottom: 0; }
+
+p strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.callout {
+  margin: 24px 0;
+  padding: 20px 24px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+}
+.callout p {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+  font-weight: 400;
+  margin: 0;
+}
+
+.capabilities {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0;
+}
+.cap {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.cap::before {
+  content: '→';
+  color: var(--accent);
+  font-family: var(--mono);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.audiences {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+.aud {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  font-size: 13px;
+}
+.aud strong { display: block; font-family: var(--mono); font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 500; }
+.aud span { color: var(--muted); line-height: 1.5; }
+
+.manifest-footer {
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.manifest-footer .logo { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--text); }
+.manifest-footer .logo span { color: var(--accent); }
+.manifest-footer a { font-size: 13px; color: var(--accent); text-decoration: none; padding: 10px 20px; border: 1px solid rgba(59,130,246,.3); border-radius: 5px; font-family: var(--mono); font-size: 12px; transition: border-color .15s; }
+.manifest-footer a:hover { border-color: var(--accent); }
+.manifest-footer .date { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+@media (max-width: 600px) {
+  nav { padding: 0 20px; }
+  .page { padding: 100px 20px 64px; }
+  .audiences { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Trace<span>Proof</span></a>
+  <a href="index.html" class="nav-back">← Back to product</a>
+</nav>
+
+<div class="page">
+
+  <div class="manifest-label">Manifesto</div>
+
+  <h1>Forensic Incident Capture<br>for the Enterprise</h1>
+
+  <div class="manifest-body">
+
+    <div class="section">
+      <div class="section-num">01</div>
+      <h2>A recording is not evidence.</h2>
+      <p>
+        When an incident occurs — a trading error, a policy violation, a disputed transaction —
+        you have seconds to capture what happened. Most organizations reach for a screen recorder.
+        That is a mistake.
+      </p>
+      <p>
+        <strong>A screen recording produces a file.</strong> A file can be edited, backdated, or fabricated
+        entirely. It carries no verifiable timestamp, no proof of origin, no guarantee that
+        what you're watching is what actually happened.
+      </p>
+      <div class="callout">
+        <p>A TraceProof incident produces evidence. There is a difference — and that difference is what holds up in front of a regulator, a lawyer, or a judge.</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-num">02</div>
+      <h2>What TraceProof does.</h2>
+      <p>
+        TraceProof maintains a continuous screen buffer in the background and instantly seals
+        a clip on trigger — hotkey, voice activity, mouse behavior, or automatic on-screen
+        text recognition. Every incident is packaged with a dual hash, multi-source timestamp,
+        and a blockchain-style chain of custody. The package is automatically uploaded to your
+        server the moment it's sealed, before it can be tampered with locally.
+      </p>
+      <div class="capabilities">
+        <div class="cap">DXGI Desktop Duplication capture — including DirectX overlays and HDR content invisible to conventional tools</div>
+        <div class="cap">HMAC-SHA256 package signing under a key protected by Windows DPAPI or hardware TPM</div>
+        <div class="cap">Timestamps cross-verified against three independent NTP servers and DNS SOA serial</div>
+        <div class="cap">Hash-linked chain of custody — deletion or modification of any entry is immediately detectable</div>
+        <div class="cap">Automatic upload to Evidence Vault before local tampering is possible</div>
+        <div class="cap">Standalone forensic verifier with JSON output for SIEM and investigation pipelines</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-num">03</div>
+      <h2>Why it matters.</h2>
+      <p>
+        Ordinary screen recording produces a file. A <strong>TraceProof incident produces evidence.</strong>
+        Every clip is signed with HMAC-SHA256 under a key protected by Windows DPAPI or TPM.
+        Timestamps are cross-verified against three NTP servers and DNS.
+        The full incident history is protected by a hash-linked chain —
+        deletion or modification of any entry is immediately detectable.
+      </p>
+      <p>
+        A standalone verifier with JSON output integrates into existing investigation
+        workflows and SIEM pipelines. When your compliance team, legal counsel, or regulator
+        asks for proof — you have a package, not a story.
+      </p>
+    </div>
+
+    <div class="section">
+      <div class="section-num">04</div>
+      <h2>Who it's for.</h2>
+      <p>TraceProof is built for environments where the integrity of the record is not optional.</p>
+      <div class="audiences">
+        <div class="aud">
+          <strong>Trading desks &amp; brokers</strong>
+          <span>Capture market events, execution errors, and margin calls with legally defensible records.</span>
+        </div>
+        <div class="aud">
+          <strong>Compliance &amp; internal investigations</strong>
+          <span>Evidence that holds up to regulatory and legal scrutiny. Not just screenshots.</span>
+        </div>
+        <div class="aud">
+          <strong>IT security</strong>
+          <span>Privileged user monitoring with court-admissible audit trails.</span>
+        </div>
+        <div class="aud">
+          <strong>Outsourced compliance</strong>
+          <span>Multi-machine Evidence Vault with real-time webhook and incident management dashboard.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-num">05</div>
+      <h2>A note on responsible use.</h2>
+      <p>
+        TraceProof is designed for <strong>authorized monitoring of employer-owned devices</strong>,
+        with appropriate notice to monitored employees as required by applicable law.
+        It is not a surveillance tool. It is a forensic record-keeping system for
+        environments that have a legitimate, documented need for tamper-evident incident capture.
+      </p>
+      <p>
+        Deploying TraceProof without employee notification where legally required,
+        or on devices you do not own or have authority over, is your legal responsibility —
+        not ours. Know your jurisdiction. Consult your counsel.
+      </p>
+      <div class="callout">
+        <p>Evidence that was captured improperly is not evidence. TraceProof gives you the technical foundation. The legal framework is yours to establish.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="manifest-footer">
+    <div>
+      <div class="logo">Trace<span>Proof</span></div>
+      <div class="date" style="margin-top:6px">2026</div>
+    </div>
+    <a href="index.html">See the product →</a>
+  </div>
+
+</div>
+
+</body>
+</html>
