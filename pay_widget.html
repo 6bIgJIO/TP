@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buy Trace Proof</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#080808;--s:#101010;--b:#1e1e1e;--t:#d8d8d8;--d:#585858;--acid:#c8ff00;--f:'IBM Plex Mono',monospace}
+body{background:var(--bg);color:var(--t);font-family:var(--f);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
+.widget{width:100%;max-width:640px}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:40px}
+.step{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--d)}
+.step.active{color:var(--acid)}.step.done{color:var(--d)}
+.step-num{width:24px;height:24px;border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.step.active .step-num{border-color:var(--acid);color:var(--acid)}
+.step.done .step-num{background:var(--acid);color:#000;border-color:var(--acid)}
+.step-line{flex:1;height:1px;background:var(--b);margin:0 8px}
+
+/* TIER TABS */
+.tier-tabs{display:flex;gap:2px;margin-bottom:2px}
+.tier-tab{flex:1;padding:10px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:var(--s);border:1px solid var(--b);cursor:pointer;transition:all .2s;color:var(--d)}
+.tier-tab.active{border-color:var(--acid);color:var(--acid);background:rgba(200,255,0,0.04)}
+
+/* BILLING TOGGLE */
+.billing-toggle{display:flex;gap:2px;margin-bottom:24px}
+.bill-btn{flex:1;padding:10px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:var(--s);border:1px solid var(--b);cursor:pointer;transition:all .2s;color:var(--d)}
+.bill-btn.active{border-color:rgba(200,255,0,0.4);color:var(--acid);background:rgba(200,255,0,0.03)}
+
+/* PLAN CARD */
+.plan-display{background:var(--s);border:1px solid var(--b);padding:28px 32px;margin-bottom:24px;transition:border-color .3s}
+.plan-display.highlight{border-color:rgba(200,255,0,0.3);box-shadow:0 0 40px rgba(200,255,0,0.04)}
+.plan-display-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.plan-tier{font-size:20px;color:#fff;font-weight:700}
+.plan-tier-note{font-size:11px;color:var(--d);margin-top:4px;line-height:1.5}
+.plan-price-block{text-align:right}
+.plan-price{font-size:36px;color:var(--acid);font-weight:700;line-height:1}
+.plan-period{font-size:11px;color:var(--d);margin-top:4px}
+.plan-save{font-size:10px;color:var(--acid);margin-top:4px;letter-spacing:1px}
+
+/* NETWORK SELECT */
+.net-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--d);margin-bottom:10px}
+.net-btns{display:flex;gap:2px;margin-bottom:24px}
+.net-btn{flex:1;padding:10px;text-align:center;font-size:11px;letter-spacing:2px;text-transform:uppercase;background:var(--s);border:1px solid var(--b);cursor:pointer;transition:all .2s;color:var(--d)}
+.net-btn.active{border-color:var(--acid);color:var(--acid)}
+
+/* SHARED STYLES */
+.field{margin-bottom:20px}
+.field label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--d);margin-bottom:8px}
+.field input{width:100%;background:var(--s);border:1px solid var(--b);color:var(--t);padding:12px 16px;font-family:var(--f);font-size:13px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--acid)}
+.field input::placeholder{color:var(--d)}
+.wallet-box{background:var(--s);border:1px solid var(--b);padding:24px;margin-bottom:24px}
+.wallet-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--d);margin-bottom:12px}
+.wallet-amount{font-size:28px;color:var(--acid);margin-bottom:16px;font-weight:700}
+.wallet-addr{background:var(--bg);border:1px solid var(--b);padding:12px 16px;font-size:12px;color:var(--t);word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.copy-btn{background:transparent;border:1px solid var(--b);color:var(--d);padding:6px 12px;font-family:var(--f);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.copy-btn:hover{border-color:var(--acid);color:var(--acid)}
+.wallet-note{font-size:11px;color:var(--d);margin-top:12px;line-height:1.6}
+.invoice-id-box{background:var(--bg);border:1px solid rgba(200,255,0,0.15);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between}
+.invoice-id-label{font-size:10px;letter-spacing:2px;color:var(--d);text-transform:uppercase}
+.invoice-id-val{font-size:14px;color:var(--acid);letter-spacing:3px}
+.tx-note{font-size:11px;color:var(--d);margin-bottom:20px;line-height:1.7}
+.status-box{text-align:center;padding:48px 24px}
+.status-icon{font-size:48px;margin-bottom:24px}
+.status-title{font-size:20px;letter-spacing:3px;color:var(--acid);margin-bottom:16px}
+.status-text{font-size:12px;color:var(--d);line-height:1.8;max-width:400px;margin:0 auto}
+.btn{width:100%;padding:14px;font-family:var(--f);font-size:12px;letter-spacing:3px;text-transform:uppercase;border:none;cursor:pointer;font-weight:700;transition:all .2s}
+.btn-acid{background:var(--acid);color:#000}
+.btn-acid:hover{background:#fff}
+.btn-acid:disabled{background:var(--b);color:var(--d);cursor:not-allowed}
+.error{font-size:11px;color:#ff4444;margin-top:8px;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="widget">
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-num">1</div><span>Plan</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s2"><div class="step-num">2</div><span>Network</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s3"><div class="step-num">3</div><span>Pay</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s4"><div class="step-num">4</div><span>Submit</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="s5"><div class="step-num">5</div><span>Done</span></div>
+  </div>
+
+  <!-- SCREEN 1: Plan select -->
+  <div id="screen-1">
+    <!-- Tier tabs -->
+    <div class="tier-tabs">
+      <div class="tier-tab active" id="tab-pro" onclick="selectTier('pro')">PRO</div>
+      <div class="tier-tab" id="tab-ent" onclick="selectTier('ent')">Enterprise</div>
+      <div class="tier-tab" id="tab-entplus" onclick="selectTier('entplus')">Enterprise+</div>
+    </div>
+    <!-- Billing toggle -->
+    <div class="billing-toggle">
+      <div class="bill-btn active" id="bill-monthly" onclick="selectBilling('monthly')">Monthly</div>
+      <div class="bill-btn" id="bill-yearly" onclick="selectBilling('yearly')">Yearly <span id="save-tag" style="color:var(--acid)"></span></div>
+    </div>
+    <!-- Plan display -->
+    <div class="plan-display highlight" id="plan-display">
+      <div class="plan-display-header">
+        <div>
+          <div class="plan-tier" id="pd-tier">PRO</div>
+          <div class="plan-tier-note" id="pd-note">For teams and individual professionals</div>
+        </div>
+        <div class="plan-price-block">
+          <div class="plan-price" id="pd-price">$89</div>
+          <div class="plan-period" id="pd-period">/ month</div>
+          <div class="plan-save" id="pd-save"></div>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Your Email — license will be sent here</label>
+      <input type="email" id="email-input" placeholder="you@example.com">
+    </div>
+    <div class="error" id="err1"></div>
+    <button class="btn btn-acid" onclick="step1Next()">Continue →</button>
+  </div>
+
+  <!-- SCREEN 2: Network select -->
+  <div id="screen-2" style="display:none">
+    <div class="invoice-id-box">
+      <span class="invoice-id-label">Invoice</span>
+      <span class="invoice-id-val" id="show-invoice-id">—</span>
+    </div>
+    <div class="net-label">Select payment network</div>
+    <div class="net-btns">
+      <div class="net-btn active" id="net-trc20" onclick="selectNet('TRC20')">
+        TRC20 (Tron)<br><span style="font-size:9px;color:var(--d)">Low fees</span>
+      </div>
+      <div class="net-btn" id="net-erc20" onclick="selectNet('ERC20')">
+        ERC20 (Ethereum)<br><span style="font-size:9px;color:var(--d)">Higher fees</span>
+      </div>
+    </div>
+    <div class="error" id="err2"></div>
+    <button class="btn btn-acid" onclick="step2Next()">Continue →</button>
+  </div>
+
+  <!-- SCREEN 3: Wallet + payment -->
+  <div id="screen-3" style="display:none">
+    <div class="invoice-id-box">
+      <span class="invoice-id-label">Invoice</span>
+      <span class="invoice-id-val" id="show-invoice-id-3">—</span>
+    </div>
+    <div class="wallet-box">
+      <div class="wallet-label">Send exactly</div>
+      <div class="wallet-amount" id="show-amount">—</div>
+      <div class="wallet-label" style="margin-bottom:8px">To <span id="show-net-label">—</span> address</div>
+      <div class="wallet-addr">
+        <span id="show-wallet">—</span>
+        <button class="copy-btn" onclick="copyWallet()">COPY</button>
+      </div>
+      <div class="wallet-note" id="net-note">—</div>
+    </div>
+    <button class="btn btn-acid" onclick="setStep(4)">I've paid →</button>
+  </div>
+
+  <!-- SCREEN 4: TX Hash -->
+  <div id="screen-4" style="display:none">
+    <div class="invoice-id-box">
+      <span class="invoice-id-label">Invoice</span>
+      <span class="invoice-id-val" id="show-invoice-id-4">—</span>
+    </div>
+    <p class="tx-note" id="tx-note-link">—</p>
+    <div class="field">
+      <label>Transaction Hash</label>
+      <input type="text" id="tx-input" placeholder="Paste TX hash here...">
+    </div>
+    <div class="error" id="err4"></div>
+    <button class="btn btn-acid" onclick="submitTx()">Submit payment proof →</button>
+  </div>
+
+  <!-- SCREEN 5: Done -->
+  <div id="screen-5" style="display:none">
+    <div class="status-box">
+      <div class="status-icon">⏳</div>
+      <div class="status-title">PAYMENT RECEIVED</div>
+      <p class="status-text">
+        Transaction submitted. Your license will be sent to<br>
+        <strong id="show-email-done" style="color:var(--t)">—</strong><br><br>
+        Verification usually takes a few hours. Check spam folder.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = "https://6bigjio-payments.bydlopay.workers.dev";
+
+const PLANS = {
+  pro:      { name: "PRO",         note: "For teams and individual professionals", monthly: { plan: "pro_monthly", price: 89 },    yearly: { plan: "pro_yearly",       price: 749  } },
+  ent:      { name: "Enterprise",  note: "For organizations and ops teams",        monthly: { plan: "ent_monthly", price: 399 },   yearly: { plan: "ent_yearly",       price: 3499 } },
+  entplus:  { name: "Enterprise+", note: "Largest deployments, custom workflows",  monthly: { plan: "entplus_monthly", price: 749 },yearly: { plan: "entplus_yearly",  price: 6500 } },
+};
+
+let tier = "pro";
+let billing = "monthly";
+let selectedNet = "TRC20";
+let invoiceId = "";
+let userEmail = "";
+let finalPlanId = "";
+let finalAmount = 0;
+
+function selectTier(t) {
+  tier = t;
+  ["pro","ent","entplus"].forEach(x => document.getElementById("tab-"+x).classList.toggle("active", x===t));
+  updatePlanDisplay();
+}
+
+function selectBilling(b) {
+  billing = b;
+  document.getElementById("bill-monthly").classList.toggle("active", b==="monthly");
+  document.getElementById("bill-yearly").classList.toggle("active", b==="yearly");
+  updatePlanDisplay();
+}
+
+function updatePlanDisplay() {
+  const p = PLANS[tier];
+  const b = p[billing];
+  document.getElementById("pd-tier").textContent   = p.name;
+  document.getElementById("pd-note").textContent   = p.note;
+  document.getElementById("pd-price").textContent  = "$" + b.price;
+  document.getElementById("pd-period").textContent = billing === "monthly" ? "/ month" : "/ year";
+
+  if (billing === "yearly") {
+    const monthly = PLANS[tier].monthly.price;
+    const saved = ((monthly * 12 - b.price) / (monthly * 12) * 100).toFixed(0);
+    document.getElementById("pd-save").textContent = "Save " + saved + "% vs monthly";
+    document.getElementById("save-tag").textContent = "↓";
+  } else {
+    document.getElementById("pd-save").textContent = "";
+    document.getElementById("save-tag").textContent = "";
+  }
+}
+
+function selectNet(net) {
+  selectedNet = net;
+  document.getElementById("net-trc20").classList.toggle("active", net==="TRC20");
+  document.getElementById("net-erc20").classList.toggle("active", net==="ERC20");
+}
+
+async function step1Next() {
+  const email = document.getElementById("email-input").value.trim();
+  if (!email || !email.includes("@")) { document.getElementById("err1").textContent = "Valid email required."; return; }
+  userEmail = email;
+  document.getElementById("err1").textContent = "";
+
+  const p = PLANS[tier][billing];
+  finalPlanId = p.plan;
+  finalAmount = p.price;
+
+  const btn = document.querySelector("#screen-1 .btn");
+  btn.disabled = true; btn.textContent = "Creating invoice...";
+
+  try {
+    // Create invoice first with TRC20 as default, network confirmed on step 2
+    const r = await fetch(WORKER + "/invoice/create", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ product_id: "TP", plan: finalPlanId, email, network: "TRC20" })
+    });
+    const data = await r.json();
+    if (!data.invoice_id) throw new Error(data.error || "Failed");
+    invoiceId = data.invoice_id;
+
+    document.getElementById("show-invoice-id").textContent   = invoiceId;
+    document.getElementById("show-invoice-id-3").textContent = invoiceId;
+    document.getElementById("show-invoice-id-4").textContent = invoiceId;
+    setStep(2);
+  } catch(e) {
+    document.getElementById("err1").textContent = e.message;
+    btn.disabled = false; btn.textContent = "Continue →";
+  }
+}
+
+async function step2Next() {
+  // Update invoice with selected network
+  // Since our worker creates invoice with network at creation time,
+  // we create a new invoice with the correct network here
+  const btn = document.querySelector("#screen-2 .btn");
+  btn.disabled = true; btn.textContent = "Confirming...";
+
+  try {
+    const r = await fetch(WORKER + "/invoice/create", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ product_id: "TP", plan: finalPlanId, email: userEmail, network: selectedNet })
+    });
+    const data = await r.json();
+    if (!data.invoice_id) throw new Error(data.error || "Failed");
+    invoiceId = data.invoice_id;
+
+    document.getElementById("show-invoice-id").textContent   = invoiceId;
+    document.getElementById("show-invoice-id-3").textContent = invoiceId;
+    document.getElementById("show-invoice-id-4").textContent = invoiceId;
+    document.getElementById("show-amount").textContent       = "$" + data.amount + " USDT";
+    document.getElementById("show-wallet").textContent       = data.wallet;
+    document.getElementById("show-net-label").textContent    = data.network;
+
+    const isERC = data.network === "ERC20";
+    document.getElementById("net-note").innerHTML = isERC
+      ? "Network: <strong>ERC20 (Ethereum)</strong>. Send exact amount. Gas fees are separate."
+      : "Network: <strong>TRC20 (Tron)</strong>. Low fees. Send exact amount only.";
+
+    document.getElementById("tx-note-link").innerHTML = isERC
+      ? `Find your TX on <a href="https://etherscan.io" target="_blank" style="color:var(--acid)">etherscan.io</a>, copy the TX Hash and paste below.`
+      : `Find your TX on <a href="https://tronscan.org" target="_blank" style="color:var(--acid)">tronscan.org</a>, copy the TX Hash and paste below.`;
+
+    setStep(3);
+  } catch(e) {
+    document.getElementById("err2").textContent = e.message;
+    btn.disabled = false; btn.textContent = "Continue →";
+  }
+}
+
+async function submitTx() {
+  const txHash = document.getElementById("tx-input").value.trim();
+  if (!txHash || txHash.length < 20) { document.getElementById("err4").textContent = "Paste a valid TX hash."; return; }
+  const btn = document.querySelector("#screen-4 .btn");
+  btn.disabled = true; btn.textContent = "Submitting...";
+  try {
+    const r = await fetch(WORKER + "/invoice/submit-tx", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ invoice_id: invoiceId, tx_hash: txHash })
+    });
+    const data = await r.json();
+    if (data.status !== "PENDING_REVIEW") throw new Error(data.error || "Failed");
+    document.getElementById("show-email-done").textContent = userEmail;
+    setStep(5);
+  } catch(e) {
+    document.getElementById("err4").textContent = e.message;
+    btn.disabled = false; btn.textContent = "Submit payment proof →";
+  }
+}
+
+function setStep(n) {
+  const total = 5;
+  for (let i=1;i<=total;i++) {
+    document.getElementById("screen-"+i).style.display = i===n?"block":"none";
+    const s = document.getElementById("s"+i);
+    if (s) s.className = "step"+(i<n?" done":i===n?" active":"");
+  }
+}
+
+function copyWallet() {
+  navigator.clipboard.writeText(document.getElementById("show-wallet").textContent).catch(()=>{});
+  const btn = document.querySelector(".copy-btn");
+  btn.textContent="COPIED ✓"; btn.style.color="var(--acid)";
+  setTimeout(()=>{btn.textContent="COPY";btn.style.color="";},2000);
+}
+
+// Init
+updatePlanDisplay();
+</script>
+</body>
+</html>
