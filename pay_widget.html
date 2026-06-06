@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#080808;--s:#101010;--b:#1e1e1e;--t:#d8d8d8;--d:#585858;--acid:#c8ff00;--f:'IBM Plex Mono',monospace}
+:root{--bg:#080808;--s:#101010;--b:#1e1e1e;--t:#d8d8d8;--d:#585858;--acid:#3b82f6;--f:'IBM Plex Mono',monospace}
 body{background:var(--bg);color:var(--t);font-family:var(--f);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px}
 .widget{width:100%;max-width:640px}
 .steps{display:flex;align-items:center;gap:0;margin-bottom:40px}
@@ -68,7 +68,7 @@ body{background:var(--bg);color:var(--t);font-family:var(--f);min-height:100vh;d
 .status-text{font-size:12px;color:var(--d);line-height:1.8;max-width:400px;margin:0 auto}
 .btn{width:100%;padding:14px;font-family:var(--f);font-size:12px;letter-spacing:3px;text-transform:uppercase;border:none;cursor:pointer;font-weight:700;transition:all .2s}
 .btn-acid{background:var(--acid);color:#000}
-.btn-acid:hover{background:#fff}
+.btn-acid:hover{opacity:.85}
 .btn-acid:disabled{background:var(--b);color:var(--d);cursor:not-allowed}
 .error{font-size:11px;color:#ff4444;margin-top:8px;letter-spacing:1px}
 </style>
@@ -198,8 +198,19 @@ const PLANS = {
   entplus:  { name: "Enterprise+", note: "Largest deployments, custom workflows",  monthly: { plan: "entplus_monthly", price: 749 },yearly: { plan: "entplus_yearly",  price: 6500 } },
 };
 
-let tier = "pro";
-let billing = "monthly";
+const params = new URLSearchParams(location.search);
+
+let tier = params.get("tier") || "pro";
+let billing = params.get("billing") || "monthly";
+
+if (!["pro", "ent", "entplus"].includes(tier)) {
+  tier = "pro";
+}
+
+if (!["monthly", "yearly"].includes(billing)) {
+  billing = "monthly";
+}
+
 let selectedNet = "TRC20";
 let invoiceId = "";
 let userEmail = "";
@@ -353,7 +364,8 @@ function copyWallet() {
 }
 
 // Init
-updatePlanDisplay();
+selectTier(tier);
+selectBilling(billing);
 </script>
 </body>
 </html>
